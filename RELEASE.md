@@ -1,6 +1,8 @@
 How to make a release
 =====================
 
+Switched to Java 8.
+
 Preparation
 -----------
 
