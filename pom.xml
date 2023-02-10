@@ -5,7 +5,7 @@
 
   <groupId>com.github.fracpete</groupId>
   <artifactId>lightgbm-weka-package</artifactId>
-  <version>2023.2.10-SNAPSHOT</version>
+  <version>2023.2.10</version>
   <packaging>jar</packaging>
 
   <name>lightgbm</name>
