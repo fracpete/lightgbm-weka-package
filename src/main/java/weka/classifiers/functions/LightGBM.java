@@ -28,6 +28,7 @@ import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Option;
+import weka.core.Randomizable;
 import weka.core.RevisionUtils;
 import weka.core.SelectedTag;
 import weka.core.Tag;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 /**
@@ -55,7 +57,7 @@ import java.util.Vector;
  */
 public class LightGBM
   extends AbstractClassifier
-  implements TechnicalInformationHandler {
+  implements TechnicalInformationHandler, Randomizable {
 
   private static final long serialVersionUID = -6138516902729782286L;
 
@@ -109,8 +111,20 @@ public class LightGBM
   /** the number of iterations to train for. */
   protected int m_NumIterations = 10;
 
+  /** the size of the validation set (0-100). */
+  protected double m_ValidationPercentage = 0.0;
+
+  /** whether to randomize before splitting off the validation set. */
+  protected boolean m_RandomizeBeforeSplit = false;
+
+  /** the seed value to use for the randomization. */
+  protected int m_Seed = 1;
+
   /** the booster instance in use. */
   protected transient LGBMBooster m_Booster = null;
+
+  /** the actual parameters passed to the booster. */
+  protected String m_ActualParameters;
 
   /** the built model. */
   protected String m_Model = null;
@@ -122,10 +136,16 @@ public class LightGBM
    *         explorer/experimenter gui
    */
   public String globalInfo() {
-    return "LightGBM is a gradient boosting framework that uses tree based learning algorithms. "
-      + "It is designed to be distributed and efficient.\n\n"
+    return "LightGBM (https://github.com/microsoft/LightGBM) is a gradient boosting framework that uses tree based learning algorithms. "
+      + "It is designed to be distributed and efficient.\n"
+      + "\n"
+      + "Information on parameters:\n"
+      + PARAMETERS_URL + "\n"
+      + "The following parameters get filled in automatically:\n"
+      + "- objective\n"
+      + "- categorical_features\n"
+      + "\n"
       + "For more information see:\n\n"
-      + "https://github.com/microsoft/LightGBM\n\n"
       + getTechnicalInformation().toString();
   }
 
@@ -189,6 +209,22 @@ public class LightGBM
 	+ "\t(default: none)\n",
       "I", 1, "-I <iterations>"));
 
+    result.addElement(new Option(
+      "\tThe size of the validation set to split off from the training set.\n"
+	+ "\t(default: 0.0)\n",
+      "V", 1, "-V <0-100>"));
+
+    result.addElement(new Option(
+      "\tTurns on randomization before splitting off the validation set.\n"
+	+ "\t(default: off)\n",
+      "R", 0, "-R"));
+
+    result.addElement(new Option(
+      "\tThe seed value to use for randomizing the data before splitting off\n"
+	+ "\tthe validations set.\n"
+	+ "\t(default: 1)\n",
+      "S", 1, "-S <seed>"));
+
     return result.elements();
   }
 
@@ -218,6 +254,20 @@ public class LightGBM
     else
       setNumIterations(100);
 
+    tmpStr = Utils.getOption('V', options);
+    if (tmpStr.length() != 0)
+      setValidationPercentage(Double.parseDouble(tmpStr));
+    else
+      setValidationPercentage(0.0);
+
+    setRandomizeBeforeSplit(Utils.getFlag('R', options));
+
+    tmpStr = Utils.getOption('S', options);
+    if (tmpStr.length() != 0)
+      setSeed(Integer.parseInt(tmpStr));
+    else
+      setSeed(1);
+
     super.setOptions(options);
   }
 
@@ -241,6 +291,16 @@ public class LightGBM
 
     result.add("-I");
     result.add("" + getNumIterations());
+
+    result.add("-V");
+    result.add("" + getValidationPercentage());
+
+    if (getRandomizeBeforeSplit()) {
+      result.add("-R");
+
+      result.add("-S");
+      result.add("" + getSeed());
+    }
 
     return result.toArray(new String[0]);
   }
@@ -333,6 +393,91 @@ public class LightGBM
   }
 
   /**
+   * Sets the percentage to split off the training data an use as validation set during training.
+   *
+   * @param value 	the percentage
+   */
+  public void setValidationPercentage(double value) {
+    if ((value >= 0.0) && (value < 100.0))
+      m_ValidationPercentage = value;
+  }
+
+  /**
+   * Gets the percentage to split off the training data an use as validation set during training.
+   *
+   * @return 		the percentage
+   */
+  public double getValidationPercentage() {
+    return m_ValidationPercentage;
+  }
+
+  /**
+   * Returns the tip text for this property
+   *
+   * @return 		tip text for this property suitable for
+   * 			displaying in the explorer/experimenter gui
+   */
+  public String validationPercentageTipText() {
+    return "Sets the percentage to split off the training set for using as validation set during training (0 <= x < 100).";
+  }
+
+  /**
+   * Sets whether to randomize the data before splitting off the validation set.
+   *
+   * @param value 	true if to randomize
+   */
+  public void setRandomizeBeforeSplit(boolean value) {
+    m_RandomizeBeforeSplit = value;
+  }
+
+  /**
+   * Gets whether to randomize the data before splitting off the validation set.
+   *
+   * @return 		true if to randomize
+   */
+  public boolean getRandomizeBeforeSplit() {
+    return m_RandomizeBeforeSplit;
+  }
+
+  /**
+   * Returns the tip text for this property
+   *
+   * @return 		tip text for this property suitable for
+   * 			displaying in the explorer/experimenter gui
+   */
+  public String randomizeBeforeSplitTipText() {
+    return "If enabled, the data gets randomized before splitting off the validation set.";
+  }
+
+  /**
+   * Sets the seed value to use when randomizing the data before splitting off the validation set.
+   *
+   * @param value 	the seed value
+   */
+  public void setSeed(int value) {
+    m_Seed = value;
+  }
+
+  /**
+   * Gets the seed value to use when randomizing the data before splitting off the validation set.
+   *
+   * @return 		the seed value
+   */
+  public int getSeed() {
+    return m_Seed;
+  }
+
+  /**
+   * Returns the tip text for this property
+   *
+   * @return 		tip text for this property suitable for
+   * 			displaying in the explorer/experimenter gui
+   */
+  public String seedTipText() {
+    return "The seed value to use when randomizing the data before splitting off the validation set.";
+  }
+
+  /**
    * Returns the Capabilities of this classifier.
    *
    * @return the capabilities of this object
@@ -345,6 +490,7 @@ public class LightGBM
     result = new Capabilities(this);
 
     // attributes
+    result.enable(Capabilities.Capability.NOMINAL_ATTRIBUTES);
     result.enable(Capabilities.Capability.NUMERIC_ATTRIBUTES);
     result.enable(Capabilities.Capability.DATE_ATTRIBUTES);
 
@@ -385,9 +531,13 @@ public class LightGBM
    */
   @Override
   public void buildClassifier(Instances data) throws Exception {
-    String	parameters;
-    LGBMDataset	dataset;
-    int		i;
+    Instances		train;
+    Instances 		val;
+    LGBMDataset 	lgbmTrain;
+    LGBMDataset 	lgbmVal;
+    int		 	i;
+    int			size;
+    StringBuilder 	categorical;
 
     // can classifier handle the data?
     getCapabilities().testWithFail(data);
@@ -396,21 +546,56 @@ public class LightGBM
     data = new Instances(data);
     data.deleteWithMissingClass();
 
-    dataset = LightGBMUtils.fromInstances(data);
-    parameters = "objective=" + getObjective().getSelectedTag().getIDStr()
-      + " label=name:" + data.classAttribute().name();
+    // validation set?
+    train = data;
+    val   = null;
+    if (m_ValidationPercentage > 0) {
+      if (m_RandomizeBeforeSplit)
+	data.randomize(new Random(m_Seed));
+      size  = (int) Math.round(data.size() * m_ValidationPercentage / 100);
+      train = new Instances(data, data.numInstances() - size);
+      val   = new Instances(data, size);
+      for (i = 0; i < data.numInstances(); i++) {
+	if (i < data.numInstances() - size)
+	  train.add((Instance) data.instance(i).copy());
+	else
+	  val.add((Instance) data.instance(i).copy());
+      }
+      if (getDebug())
+	System.out.println("train size: " + train.numInstances() + ", validation size: " + val.numInstances());
+    }
+
+    // categorical features
+    categorical = new StringBuilder();
+    for (i = 0; i < data.numAttributes(); i++) {
+      if (data.attribute(i).isNominal()) {
+	if (categorical.length() > 0)
+	  categorical.append(",");
+	categorical.append(i);
+      }
+    }
+
+    lgbmTrain = LightGBMUtils.fromInstances(train);
+    lgbmVal = null;
+    if (val != null)
+      lgbmVal = LightGBMUtils.fromInstances(val, lgbmTrain);
+    m_ActualParameters = "objective=" + getObjective().getSelectedTag().getIDStr().toLowerCase();
+    if (categorical.length() > 0)
+      m_ActualParameters += " categorical_features=" + categorical.toString();
     if (!m_Parameters.isEmpty())
-      parameters += " " + m_Parameters;
+      m_ActualParameters += " " + m_Parameters;
 
     try {
-      m_Booster = LGBMBooster.create(dataset, parameters);
+      m_Booster = LGBMBooster.create(lgbmTrain, m_ActualParameters);
+      if (lgbmVal != null)
+	m_Booster.addValidData(lgbmVal);
       for (i = 0; i < m_NumIterations; i++)
 	m_Booster.updateOneIter();
       m_Model = m_Booster.saveModelToString(m_NumIterations - 1, m_NumIterations - 1, LGBMBooster.FeatureImportanceType.GAIN);
     }
     catch (Exception e) {
       // m_Booster.close();  // TODO memory leak?
-      dataset.close();
+      lgbmTrain.close();
     }
   }
 
@@ -439,12 +624,15 @@ public class LightGBM
    */
   @Override
   public double classifyInstance(Instance instance) throws Exception {
+    double	result;
     double[]	values;
 
     initBooster();
 
     values = LightGBMUtils.fromInstance(instance);
-    return m_Booster.predictForMatSingleRow(values, PredictionType.C_API_PREDICT_NORMAL);
+    result = m_Booster.predictForMatSingleRow(values, PredictionType.C_API_PREDICT_NORMAL);
+
+    return result;
   }
 
   /**
@@ -454,10 +642,22 @@ public class LightGBM
    */
   @Override
   public String toString() {
-    if (m_Model == null)
-      return "No model built yet.";
-    else
-      return m_Model;
+    StringBuilder	result;
+
+    result = new StringBuilder();
+
+    if (m_Model == null) {
+      result.append("No model built yet.");
+    }
+    else {
+      result.append("LightGBM\n");
+      result.append("========\n\n");
+      result.append("Actual parameters: ").append(m_ActualParameters).append("\n");
+      result.append("Model:\n");
+      result.append(m_Model);
+    }
+
+    return result.toString();
   }
 
   /**

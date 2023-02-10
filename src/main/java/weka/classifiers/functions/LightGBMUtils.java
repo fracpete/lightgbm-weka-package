@@ -40,6 +40,18 @@ public class LightGBMUtils {
    * @throws LGBMException	if conversion fails
    */
   public static LGBMDataset fromInstances(Instances data) throws LGBMException {
+    return fromInstances(data, null);
+  }
+
+  /**
+   * Converts the Weka Instances into a LightGBM dataset.
+   *
+   * @param data	the data to convert
+   * @param reference   the reference dataset to use
+   * @return		the generated dataset, can be null
+   * @throws LGBMException	if conversion fails
+   */
+  public static LGBMDataset fromInstances(Instances data, LGBMDataset reference) throws LGBMException {
     LGBMDataset	result;
     int		clsIndex;
     String[]	columns;
@@ -87,7 +99,7 @@ public class LightGBMUtils {
     }
 
     // create dataset
-    result = LGBMDataset.createFromMat(attValues, data.numInstances(), columns.length, true, "", null);
+    result = LGBMDataset.createFromMat(attValues, data.numInstances(), columns.length, true, "", reference);
     result.setFeatureNames(columns);
     if (clsValues != null)
       result.setField("label", clsValues);
