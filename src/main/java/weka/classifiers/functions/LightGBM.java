@@ -109,7 +109,7 @@ public class LightGBM
   protected String m_Parameters = "";
 
   /** the number of iterations to train for. */
-  protected int m_NumIterations = 10;
+  protected int m_NumIterations = 1000;
 
   /** the size of the validation set (0-100). */
   protected double m_ValidationPercentage = 0.0;
@@ -206,7 +206,7 @@ public class LightGBM
 
     result.addElement(new Option(
       "\tThe number of iterations to train for.\n"
-	+ "\t(default: none)\n",
+	+ "\t(default: 1000)\n",
       "I", 1, "-I <iterations>"));
 
     result.addElement(new Option(
@@ -252,7 +252,7 @@ public class LightGBM
     if (tmpStr.length() != 0)
       setNumIterations(Integer.parseInt(tmpStr));
     else
-      setNumIterations(100);
+      setNumIterations(1000);
 
     tmpStr = Utils.getOption('V', options);
     if (tmpStr.length() != 0)
