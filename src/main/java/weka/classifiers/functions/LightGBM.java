@@ -23,12 +23,11 @@ package weka.classifiers.functions;
 import com.microsoft.ml.lightgbm.PredictionType;
 import io.github.metarank.lightgbm4j.LGBMBooster;
 import io.github.metarank.lightgbm4j.LGBMDataset;
-import weka.classifiers.AbstractClassifier;
+import weka.classifiers.RandomizableClassifier;
 import weka.core.Capabilities;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Option;
-import weka.core.Randomizable;
 import weka.core.RevisionUtils;
 import weka.core.SelectedTag;
 import weka.core.Tag;
@@ -56,8 +55,8 @@ import java.util.Vector;
  * @author fracpete (fracpete at waikato dot ac dot nz)
  */
 public class LightGBM
-  extends AbstractClassifier
-  implements TechnicalInformationHandler, Randomizable {
+  extends RandomizableClassifier
+  implements TechnicalInformationHandler {
 
   private static final long serialVersionUID = -6138516902729782286L;
 
@@ -117,9 +116,6 @@ public class LightGBM
   /** whether to randomize before splitting off the validation set. */
   protected boolean m_RandomizeBeforeSplit = false;
 
-  /** the seed value to use for the randomization. */
-  protected int m_Seed = 1;
-
   /** the booster instance in use. */
   protected transient LGBMBooster m_Booster = null;
 
@@ -178,6 +174,7 @@ public class LightGBM
    *
    * @return an enumeration of all the available options.
    */
+  @Override
   public Enumeration listOptions() {
     Vector<Option> 	result;
     String		desc;
@@ -219,12 +216,6 @@ public class LightGBM
 	+ "\t(default: off)\n",
       "R", 0, "-R"));
 
-    result.addElement(new Option(
-      "\tThe seed value to use for randomizing the data before splitting off\n"
-	+ "\tthe validations set.\n"
-	+ "\t(default: 1)\n",
-      "S", 1, "-S <seed>"));
-
     return result.elements();
   }
 
@@ -237,6 +228,7 @@ public class LightGBM
    * @param options	the options to parse
    * @throws Exception 	if parsing fails
    */
+  @Override
   public void setOptions(String[] options) throws Exception {
     String	tmpStr;
 
@@ -262,12 +254,6 @@ public class LightGBM
 
     setRandomizeBeforeSplit(Utils.getFlag('R', options));
 
-    tmpStr = Utils.getOption('S', options);
-    if (tmpStr.length() != 0)
-      setSeed(Integer.parseInt(tmpStr));
-    else
-      setSeed(1);
-
     super.setOptions(options);
   }
 
@@ -276,6 +262,7 @@ public class LightGBM
    *
    * @return an array of strings suitable for passing to setOptions
    */
+  @Override
   public String[] getOptions() {
     List<String> result;
 
@@ -447,34 +434,6 @@ public class LightGBM
    */
   public String randomizeBeforeSplitTipText() {
     return "If enabled, the data gets randomized before splitting off the validation set.";
-  }
-
-  /**
-   * Sets the seed value to use when randomizing the data before splitting off the validation set.
-   *
-   * @param value 	the seed value
-   */
-  public void setSeed(int value) {
-    m_Seed = value;
-  }
-
-  /**
-   * Gets the seed value to use when randomizing the data before splitting off the validation set.
-   *
-   * @return 		the seed value
-   */
-  public int getSeed() {
-    return m_Seed;
-  }
-
-  /**
-   * Returns the tip text for this property
-   *
-   * @return 		tip text for this property suitable for
-   * 			displaying in the explorer/experimenter gui
-   */
-  public String seedTipText() {
-    return "The seed value to use when randomizing the data before splitting off the validation set.";
   }
 
   /**
@@ -658,16 +617,6 @@ public class LightGBM
     }
 
     return result.toString();
-  }
-
-  /**
-   * Returns the revision string.
-   *
-   * @return the revision
-   */
-  @Override
-  public String getRevision() {
-    return RevisionUtils.extract("$Revision$");
   }
 
   /**
