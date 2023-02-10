@@ -6,7 +6,7 @@ Weka package for classifier (regression/classification) using the
 
 ## Releases
 
-* ???
+* [2023.2.10](https://github.com/fracpete/lightgbm-weka-package/releases/download/v2023.2.10/lightgbm-2023.2.10.zip)
 
 
 ## Maven
@@ -17,7 +17,7 @@ Use the following dependency in your `pom.xml`:
     <dependency>
       <groupId>com.github.fracpete</groupId>
       <artifactId>lightgbm-weka-package</artifactId>
-      <version>???</version>
+      <version>2023.2.10</version>
       <type>jar</type>
       <exclusions>
         <exclusion>
