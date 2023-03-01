@@ -591,6 +591,25 @@ public class LightGBM
   }
 
   /**
+   * Saves the model to the {@link #m_Model} member variable.
+   *
+   * @param booster the model to save
+   */
+  protected void saveModel(LGBMBooster booster) {
+    m_Model = m_Booster.saveModelToString(0, 0, LGBMBooster.FeatureImportanceType.GAIN);
+  }
+
+  /**
+   * Loads the model from the {@link #m_Model} member variable.
+   *
+   * @return the instantiated model
+   * @throws Exception if loading fails
+   */
+  protected LGBMBooster loadModel() throws Exception {
+    return LGBMBooster.loadModelFromString(m_Model);
+  }
+
+  /**
    * Generates a classifier. Must initialize all fields of the classifier
    * that are not being set via options (ie. multiple calls of buildClassifier
    * must always lead to the same result). Must not change the dataset
@@ -676,7 +695,7 @@ public class LightGBM
           break;
         }
       }
-      m_Model = m_Booster.saveModelToString(0, 0, LGBMBooster.FeatureImportanceType.GAIN);
+      saveModel(m_Booster);
     }
     catch (Exception e) {
       if (m_Booster != null)
@@ -697,7 +716,7 @@ public class LightGBM
   protected void initBooster() throws Exception {
     if (m_Booster == null) {
       if (m_Model != null)
-        m_Booster = LGBMBooster.loadModelFromString(m_Model);
+        m_Booster = loadModel();
       else
         throw new IllegalStateException("No model trained?");
     }
