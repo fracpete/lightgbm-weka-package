@@ -192,7 +192,7 @@ public class LightGBM
   protected String m_ActualParameters;
 
   /** the built model. */
-  protected String m_Model = null;
+  protected byte[] m_Model = null;
 
   /** whether the class is numeric. */
   protected boolean m_NumericClass;
@@ -596,8 +596,8 @@ public class LightGBM
    *
    * @param booster the model to save
    */
-  protected void saveModel(LGBMBooster booster) {
-    m_Model = m_Booster.saveModelToString(0, 0, LGBMBooster.FeatureImportanceType.GAIN);
+  protected void saveModel(LGBMBooster booster) throws Exception {
+    m_Model = LightGBMUtils.compress(m_Booster.saveModelToString(0, 0, LGBMBooster.FeatureImportanceType.GAIN));
   }
 
   /**
@@ -607,7 +607,7 @@ public class LightGBM
    * @throws Exception if loading fails
    */
   protected LGBMBooster loadModel() throws Exception {
-    return LGBMBooster.loadModelFromString(m_Model);
+    return LGBMBooster.loadModelFromString(LightGBMUtils.decompress(m_Model));
   }
 
   /**
@@ -769,7 +769,7 @@ public class LightGBM
       result.append("========\n\n");
       result.append("Actual parameters: ").append(m_ActualParameters).append("\n");
       result.append("Model:\n");
-      result.append(m_Model);
+      result.append(LightGBMUtils.decompress(m_Model));
     }
 
     return result.toString();

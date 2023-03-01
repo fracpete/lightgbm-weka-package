@@ -25,6 +25,14 @@ import io.github.metarank.lightgbm4j.LGBMException;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
 /**
  * Utility functions for LightGBM.
  *
@@ -131,5 +139,74 @@ public class LightGBMUtils {
     }
 
     return result;
+  }
+
+
+  /**
+   * Copies data from input stream into output stream.
+   *
+   * @param input the input stream to read from
+   * @param output the output stream to copy to
+   * @throws IOException if copying fails
+   */
+  public static void copy(InputStream input, OutputStream output) throws IOException {
+    byte[] buffer;
+    int n;
+
+    buffer = new byte[1024];
+    while ((n = input.read(buffer)) != -1)
+      output.write(buffer, 0, n);
+  }
+
+  /**
+   * Compresses the string.
+   *
+   * @param text the string to compress
+   * @return the compressed string as bytes
+   */
+  public static byte[] compress(String text) {
+    ByteArrayInputStream bis;
+    ByteArrayOutputStream bos;
+    GZIPOutputStream gos;
+
+    try {
+      bis = new ByteArrayInputStream(text.getBytes());
+      bos = new ByteArrayOutputStream();
+      gos = new GZIPOutputStream(bos);
+      copy(bis, gos);
+      gos.flush();
+      gos.close();
+      return bos.toByteArray();
+    }
+    catch (Exception e) {
+      System.err.println("Error compressing text: " + text);
+      e.printStackTrace();
+      return new byte[0];
+    }
+  }
+
+  /**
+   * Decompresses the bytes.
+   *
+   * @param compressed the data to decompress
+   * @return the decompressed string
+   */
+  public static String decompress(byte[] compressed) {
+    ByteArrayInputStream bis;
+    GZIPInputStream gis;
+    ByteArrayOutputStream bos;
+
+    try {
+      bis = new ByteArrayInputStream(compressed);
+      gis = new GZIPInputStream(bis);
+      bos = new ByteArrayOutputStream();
+      copy(gis, bos);
+      return new String(bos.toByteArray());
+    }
+    catch (Exception e) {
+      System.err.println("Error decompressing data:");
+      e.printStackTrace();
+      return "Error decompressing data: " + e;
+    }
   }
 }
