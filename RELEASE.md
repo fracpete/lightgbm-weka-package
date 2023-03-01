@@ -55,3 +55,11 @@ Maven
   git push
   ````
 
+
+README
+------
+
+* Update the README.md
+
+  * add new release download link
+  * update Maven artifact version
