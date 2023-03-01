@@ -50,6 +50,7 @@ import java.util.Vector;
  * The following parameters get filled in automatically:<br>
  * - objective<br>
  * - categorical_features<br>
+ * - num_class (for multi-class)<br>
  * <br>
  * For more information see:<br>
  * <br>
@@ -211,6 +212,7 @@ public class LightGBM
       + "The following parameters get filled in automatically:\n"
       + "- objective\n"
       + "- categorical_features\n"
+      + "- num_class (for multi-class)\n"
       + "\n"
       + "For more information see:\n\n"
       + getTechnicalInformation().toString();
@@ -677,6 +679,8 @@ public class LightGBM
       + " label=name:" + data.classAttribute().name();
     if (categorical.length() > 0)
       m_ActualParameters += " categorical_features=" + categorical.toString();
+    if (data.classAttribute().isNominal() && (m_Objective != OBJECTIVE_BINARY))
+      m_ActualParameters += " num_class=" + data.classAttribute().numValues();
     if (!m_Parameters.isEmpty())
       m_ActualParameters += " " + m_Parameters;
     if (getDebug())
