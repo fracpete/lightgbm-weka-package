@@ -576,7 +576,6 @@ public class LightGBM
       case OBJECTIVE_MULTICLASS:
       case OBJECTIVE_MULTICLASSOVA:
         result.enable(Capabilities.Capability.NOMINAL_CLASS);
-        result.disable(Capabilities.Capability.BINARY_CLASS);
         result.disable(Capabilities.Capability.UNARY_CLASS);
         break;
 
