@@ -5,10 +5,10 @@
 PackageName=lightgbm
 
 # Version (required)
-Version=2023.2.10
+Version=2023.3.1
 
 #Date (year-month-day)
-Date=2023-02-10
+Date=2023-03-01
 
 # Title (required)
 Title=LightGBM
@@ -29,7 +29,7 @@ License=GPL 3.0
 Description=Classifier (regression/classification) using the LightGBM gradient boosting framework (https://github.com/microsoft/LightGBM).
 
 # Package URL for obtaining the package archive (required)
-PackageURL=https://github.com/fracpete/lightgbm-weka-package/releases/download/v2023.2.10/lightgbm-2023.2.10.zip
+PackageURL=https://github.com/fracpete/lightgbm-weka-package/releases/download/v2023.3.1/lightgbm-2023.3.1.zip
 
 # URL for further information
 URL=https://github.com/fracpete/lightgbm-weka-package
